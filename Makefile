@@ -18,5 +18,8 @@ $(RAW_MAT_DIR)/.sentinel: $(TRAIN1_ZIP) $(TRAIN2_ZIP) $(TRAIN3_ZIP) $(TEST_ZIP)
 
 unzip-files: $(RAW_MAT_DIR)/.sentinel
 
+summary: 
+	julia src/data_summary.jl $(RAW_MAT_DIR)/data
+
 all:
 	echo "$(TRAIN1_ZIP)"
