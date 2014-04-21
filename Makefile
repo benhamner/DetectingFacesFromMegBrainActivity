@@ -27,8 +27,8 @@ features:
 summary: 
 	julia src/data_summary.jl $(RAW_MAT_DIR)/data
 
-plot-grand-averages:
-	julia src/plot_grand_averages.jl $(RAW_MAT_DIR)/data $(WORKING_DIR)/GrandAverages
+plots:
+	julia src/plot_grand_averages.jl $(RAW_MAT_DIR)/data $(WORKING_DIR)/Plots
 
 all:
 	echo "$(TRAIN1_ZIP)"

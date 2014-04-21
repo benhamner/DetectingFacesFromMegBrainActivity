@@ -2,17 +2,9 @@ require("src/helpers.jl")
 using DataFrames
 using Gadfly
 using MAT
-using PyCall
 
 data_path   = ARGS[1]
-output_path = ARGS[2]
-
-function butterworth_filter()
-    @pyimport scipy.signal as signal
-    (N, Wn) = signal.buttord(wp=0.2, ws=0.3, gpass=0.1, gstop=20.0)
-    (b, a)  = signal.butter(N, Wn)
-    (b, a)
-end
+output_path = ensure_empty_directory_exists(ARGS[2])
 
 function plot_grand_average(average, title)
     channels = repmat([1:size(average, 1)], 1, size(average, 2)) 
@@ -27,9 +19,26 @@ function plot_grand_average(average, title)
     draw(PNG(joinpath(output_path, @sprintf("Average-%s.png", title)), 20cm, 15cm), p)
 end
 
+function plot_fft(X, sampling_rate, title)
+    power = vec(mean(abs(rfft(X, 3)), (1,2)))
+    frequencies = linspace(sampling_rate/2/length(power), sampling_rate/2, length(power))
+    df = DataFrame(Frequencies=frequencies, Power=power)
+    p = plot(df, x="Frequencies", y="Power", Geom.line)
+    draw(PNG(joinpath(output_path, @sprintf("FFT-%s.png", title)), 20cm, 15cm), p)
+end
+
 for subject=train_subjects
     f = matopen(joinpath(data_path, subject_file(subject)))
-    X = read(f, "X")
+    X     = read(f, "X")
+    sfreq = read(f, "sfreq")
+    plot_fft(X, sfreq, @sprintf("Subject %d-Face", subject))
+    #(b,a) = power_filter(sfreq, 50)
+    #apply_filter!(X, b, a)
+    #(b,a) = power_filter(sfreq, 100)
+    #apply_filter!(X, b, a)
+    (b,a) = low_pass_filter(sfreq, 40)
+    apply_filter!(X, b, a)
+    plot_fft(X, sfreq, @sprintf("After Subject %d-Face", subject))
     num_channels     = size(X,2)
     num_time_samples = size(X,3)
     y = read(f, "y")
