@@ -21,14 +21,20 @@ unzip-files: $(RAW_MAT_DIR)/.sentinel
 main:
 	julia src/main.jl $(RAW_MAT_DIR)/data
 
+single-subject:
+	julia src/single_subject.jl $(RAW_MAT_DIR)/data
+
 features:
 	julia src/features.jl $(RAW_MAT_DIR)/data
 
 summary: 
 	julia src/data_summary.jl $(RAW_MAT_DIR)/data
 
-plots:
+$(WORKING_DIR)/Plots/.sentinel: 
 	julia src/plot_grand_averages.jl $(RAW_MAT_DIR)/data $(WORKING_DIR)/Plots
+	touch $(WORKING_DIR)/Plots/.sentinel
+
+plots: $(WORKING_DIR)/Plots/.sentinel
 
 all:
 	echo "$(TRAIN1_ZIP)"

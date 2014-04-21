@@ -6,17 +6,22 @@ using MAT
 data_path   = ARGS[1]
 output_path = ensure_empty_directory_exists(ARGS[2])
 
+grand_average_path = joinpath(output_path, "GrandAverage")
+fft_path           = joinpath(output_path, "FFT")
+mkdir(grand_average_path)
+mkdir(fft_path)
+
 function plot_grand_average(average, title)
     channels = repmat([1:size(average, 1)], 1, size(average, 2)) 
     time     = repmat(transpose([1:size(average, 2)]), size(average, 1), 1)
     df = DataFrame(Response=vec(average), Channels=vec(channels), Time=vec(time))
     p = plot(df, x="Time", y="Channels", color="Response", Geom.rectbin)
-    draw(PNG(joinpath(output_path, @sprintf("%s.png", title)), 20cm, 15cm), p)
+    draw(PNG(joinpath(grand_average_path, @sprintf("%s.png", title)), 20cm, 15cm), p)
 
     grand_average = reshape(mean(average, 1), size(average,2))
     df_grand_average = DataFrame(Response=grand_average, Time=[1:length(grand_average)])
     p = plot(df_grand_average, x="Time", y="Response", Geom.line)
-    draw(PNG(joinpath(output_path, @sprintf("Average-%s.png", title)), 20cm, 15cm), p)
+    draw(PNG(joinpath(grand_average_path, @sprintf("Average-%s.png", title)), 20cm, 15cm), p)
 end
 
 function plot_fft(X, sampling_rate, title)
@@ -24,7 +29,7 @@ function plot_fft(X, sampling_rate, title)
     frequencies = linspace(sampling_rate/2/length(power), sampling_rate/2, length(power))
     df = DataFrame(Frequencies=frequencies, Power=power)
     p = plot(df, x="Frequencies", y="Power", Geom.line)
-    draw(PNG(joinpath(output_path, @sprintf("FFT-%s.png", title)), 20cm, 15cm), p)
+    draw(PNG(joinpath(fft_path, @sprintf("FFT-%s.png", title)), 20cm, 15cm), p)
 end
 
 for subject=train_subjects
