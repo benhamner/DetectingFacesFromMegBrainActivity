@@ -10,8 +10,8 @@ for subject=train_subjects
     y = read(f, "y")
     sfreq = read(f, "sfreq")
 
-    #(b,a) = low_pass_filter(sfreq, 40)
-    #apply_filter!(X, b, a)
+    (b,a) = low_pass_filter(sfreq, 40)
+    apply_filter!(X, b, a)
     println("Subject ", subject)
     evaluate_subject(X, y)
 end

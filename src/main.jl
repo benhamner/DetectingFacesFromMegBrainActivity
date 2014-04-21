@@ -40,7 +40,12 @@ for subject=11:16
     f = matopen(joinpath(data_path, subject_file(subject)))
     X = read(f, "X")
     y = read(f, "y")
+    sfreq = read(f, "sfreq")
+    
     println("Subject ", subject)
+
+    (b,a) = low_pass_filter(sfreq, 40)
+    apply_filter!(X, b, a)
     x_test = extract_features(X)[:,fea]
     res    = predict(forest, x_test)
     println(@sprintf("--Test Accuracy: %0.2f%%", accuracy(res, vec(y))*100))
