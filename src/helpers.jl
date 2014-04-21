@@ -1,6 +1,9 @@
 
 is_train_subject(subject) = subject <= 16
 
+train_subjects = [1:16]
+test_subjects  = [17:23]
+
 function subject_file(subject)
     if is_train_subject(subject)
         return @sprintf("train_subject%02d.mat", subject)

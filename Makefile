@@ -18,8 +18,17 @@ $(RAW_MAT_DIR)/.sentinel: $(TRAIN1_ZIP) $(TRAIN2_ZIP) $(TRAIN3_ZIP) $(TEST_ZIP)
 
 unzip-files: $(RAW_MAT_DIR)/.sentinel
 
+main:
+	julia src/main.jl $(RAW_MAT_DIR)/data
+
+features:
+	julia src/features.jl $(RAW_MAT_DIR)/data
+
 summary: 
 	julia src/data_summary.jl $(RAW_MAT_DIR)/data
+
+plot-grand-averages:
+	julia src/plot_grand_averages.jl $(RAW_MAT_DIR)/data $(WORKING_DIR)/GrandAverages
 
 all:
 	echo "$(TRAIN1_ZIP)"
