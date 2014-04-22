@@ -93,25 +93,38 @@ end
 function evaluate_subject(X, y)
     features = extract_features(X)
     x_train, y_train, x_test, y_test = split_train_test(features, vec(y))
-    scores = [abs(auc(vec(y_train),vec(x_train[:,i]))-0.5) for i=1:size(features, 2)]
+    println("****Not Transformed****")
+    run_models(x_train, y_train, x_test, y_test)
+
+    zmuv = fit(features, ZmuvOptions())
+    x_train = transform(zmuv, x_train)
+    x_test  = transform(zmuv, x_test)
+    println("****Zmuv Transformed****")
+    run_models(x_train, y_train, x_test, y_test)
+end
+
+function run_models(x_train, y_train, x_test, y_test)
+    scores = [abs(auc(vec(y_train),vec(x_train[:,i]))-0.5) for i=1:size(x_train, 2)]
     fea = sortperm(scores, rev=true)[1:100]
     println(@sprintf("--Score: %0.4f", scores[fea[1]]))
     println(@sprintf("--Score: %0.4f", scores[fea[end]]))
     y_train_mod = Float64[yy==1?1:-1 for yy=vec(y_train)]
-    m = fit(GlmMod, x_train[:,fea], y_train_mod, Normal())
-    res = Float64[r>0?1:0 for r=vec(x_test[:,fea]*coef(m))]
-    println(@sprintf("--Glm   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    try
+        m = fit(GlmMod, x_train[:,fea], y_train_mod, Normal())
+        res = Float64[r>0?1:0 for r=vec(x_test[:,fea]*coef(m))]
+        println(@sprintf("--Glm   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    catch
+        println("--Glm Error")
+    end
     forest = fit(x_train[:,fea], y_train, classification_forest_options(num_trees=10))
     res    = predict(forest, x_test[:,fea])
     println(@sprintf("--RF10  Accuracy: %0.2f%%", accuracy(res, y_test)*100))
-    #net    = fit(x_train[:,fea], y_train, neural_net_options(hidden_layers=Int[], stop_after_iteration=StopAfterIteration(1000)))
-    #res    = predict(net, x_test[:,fea])
-    #println(@sprintf("--Net   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
-    
-    #model = linear_model.LogisticRegression(C=1000.0, penalty="l1")
-    #model[:fit](x_train, y_train_mod)
-    #println(maximum(vec(model[:predict](x_test))))
-    #println(minimum(vec(model[:predict](x_test))))
-    #res = Float64[r>0?1:0 for r=vec(model[:predict](x_test))]
-    #println(@sprintf("--Logit Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+
+    model = linear_model.LogisticRegression(C=1.0, penalty="l1")
+    model[:fit](x_train, y_train_mod)
+    res = Float64[r>0?1:0 for r=vec(model[:predict](x_test))]
+    println(@sprintf("--Logit Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    net    = fit(x_train[:,fea], y_train, neural_net_options(stop_criteria=StopAfterIteration(1000)))
+    res    = predict(net, x_test[:,fea])
+    println(@sprintf("--Net   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
 end
