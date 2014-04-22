@@ -1,6 +1,4 @@
 require("src/helpers.jl")
-using MachineLearning
-using MAT
 
 data_path = ARGS[1]
 

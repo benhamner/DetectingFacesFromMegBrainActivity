@@ -1,4 +1,8 @@
+using MachineLearning
+using GLM
+using MAT
 using PyCall
+@pyimport sklearn.linear_model as linear_model
 
 function ensure_empty_directory_exists(directory)
     try
@@ -93,7 +97,21 @@ function evaluate_subject(X, y)
     fea = sortperm(scores, rev=true)[1:100]
     println(@sprintf("--Score: %0.4f", scores[fea[1]]))
     println(@sprintf("--Score: %0.4f", scores[fea[end]]))
-    forest = fit(x_train[:,fea], y_train, classification_forest_options(num_trees=100))
+    y_train_mod = Float64[yy==1?1:-1 for yy=vec(y_train)]
+    m = fit(GlmMod, x_train[:,fea], y_train_mod, Normal())
+    res = Float64[r>0?1:0 for r=vec(x_test[:,fea]*coef(m))]
+    println(@sprintf("--Glm   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    forest = fit(x_train[:,fea], y_train, classification_forest_options(num_trees=10))
     res    = predict(forest, x_test[:,fea])
-    println(@sprintf("--Test Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    println(@sprintf("--RF10  Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    #net    = fit(x_train[:,fea], y_train, neural_net_options(hidden_layers=Int[], stop_after_iteration=StopAfterIteration(1000)))
+    #res    = predict(net, x_test[:,fea])
+    #println(@sprintf("--Net   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    
+    #model = linear_model.LogisticRegression(C=1000.0, penalty="l1")
+    #model[:fit](x_train, y_train_mod)
+    #println(maximum(vec(model[:predict](x_test))))
+    #println(minimum(vec(model[:predict](x_test))))
+    #res = Float64[r>0?1:0 for r=vec(model[:predict](x_test))]
+    #println(@sprintf("--Logit Accuracy: %0.2f%%", accuracy(res, y_test)*100))
 end

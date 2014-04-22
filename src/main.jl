@@ -2,7 +2,8 @@ require("src/helpers.jl")
 using MachineLearning
 using MAT
 
-data_path = ARGS[1]
+data_path       = ARGS[1]
+submission_file = ARGS[2]
 
 fea = IntSet()
 
@@ -50,3 +51,24 @@ for subject=11:16
     res    = predict(forest, x_test)
     println(@sprintf("--Test Accuracy: %0.2f%%", accuracy(res, vec(y))*100))
 end
+
+submission = ["Id" "Prediction"]
+
+for subject=test_subjects
+    f = matopen(joinpath(data_path, subject_file(subject)))
+    X = read(f, "X")
+    sfreq = read(f, "sfreq")
+    ids   = read(f, "Id")
+    
+    println("Subject ", subject)
+
+    (b,a) = low_pass_filter(sfreq, 40)
+    apply_filter!(X, b, a)
+    x_test = extract_features(X)[:,fea]
+    res    = [string(int(x)) for x=predict(forest, x_test)]
+    for i=1:length(res)
+        submission = vcat(submission, [string(ids[i]) res[i]])
+    end
+end
+
+writecsv(submission_file, submission)
