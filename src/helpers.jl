@@ -12,6 +12,14 @@ function ensure_empty_directory_exists(directory)
     directory
 end
 
+function read_subject(subject)
+    f = matopen(joinpath(data_path, subject_file(subject)))
+    X = read(f, "X")
+    y = read(f, "y")
+    sfreq = read(f, "sfreq")
+    (X, y, sfreq)
+end
+
 is_train_subject(subject) = subject <= 16
 
 train_subjects = [1:16]
@@ -90,41 +98,53 @@ function extract_features(X)
     hcat(fft_features, time_features)
 end
 
-function evaluate_subject(X, y)
+function evaluate_subject(subject)
+    X, y, sfreq = read_subject(subject)
+    (b,a) = low_pass_filter(sfreq, 40)
+    apply_filter!(X, b, a)
     features = extract_features(X)
-    x_train, y_train, x_test, y_test = split_train_test(features, vec(y))
-    println("****Not Transformed****")
-    run_models(x_train, y_train, x_test, y_test)
-
+    x_train, y_train, x_test, y_test = split_train_test(features, vec(y), seed=1)
     zmuv = fit(features, ZmuvOptions())
     x_train = transform(zmuv, x_train)
     x_test  = transform(zmuv, x_test)
-    println("****Zmuv Transformed****")
-    run_models(x_train, y_train, x_test, y_test)
+    println("****50 Features****")
+    run_models(x_train, y_train, x_test, y_test, 50)
+
+    println("****100 Features****")
+    run_models(x_train, y_train, x_test, y_test, 100)
+
+    println("****250 Features****")
+    run_models(x_train, y_train, x_test, y_test, 250)
+
+    println("****500 Features****")
+    run_models(x_train, y_train, x_test, y_test, 500)
 end
 
-function run_models(x_train, y_train, x_test, y_test)
+function run_models(x_train, y_train, x_test, y_test, num_features)
     scores = [abs(auc(vec(y_train),vec(x_train[:,i]))-0.5) for i=1:size(x_train, 2)]
-    fea = sortperm(scores, rev=true)[1:100]
+    fea = sortperm(scores, rev=true)[1:num_features]
     println(@sprintf("--Score: %0.4f", scores[fea[1]]))
     println(@sprintf("--Score: %0.4f", scores[fea[end]]))
     y_train_mod = Float64[yy==1?1:-1 for yy=vec(y_train)]
-    try
-        m = fit(GlmMod, x_train[:,fea], y_train_mod, Normal())
-        res = Float64[r>0?1:0 for r=vec(x_test[:,fea]*coef(m))]
-        println(@sprintf("--Glm   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
-    catch
-        println("--Glm Error")
-    end
+    #try
+    #    m = fit(GlmMod, x_train[:,fea], y_train_mod, Normal())
+    #    res = Float64[r>0?1:0 for r=vec(x_test[:,fea]*coef(m))]
+    #    println(@sprintf("--Glm   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    #catch
+    #    println("--Glm Error")
+    #end
     forest = fit(x_train[:,fea], y_train, classification_forest_options(num_trees=10))
     res    = predict(forest, x_test[:,fea])
     println(@sprintf("--RF10  Accuracy: %0.2f%%", accuracy(res, y_test)*100))
 
+    forest = fit(x_train[:,fea], y_train, classification_forest_options(num_trees=100))
+    res    = predict(forest, x_test[:,fea])
+    println(@sprintf("--RF100 Accuracy: %0.2f%%", accuracy(res, y_test)*100))
     model = linear_model.LogisticRegression(C=1.0, penalty="l1")
     model[:fit](x_train, y_train_mod)
     res = Float64[r>0?1:0 for r=vec(model[:predict](x_test))]
     println(@sprintf("--Logit Accuracy: %0.2f%%", accuracy(res, y_test)*100))
-    net    = fit(x_train[:,fea], y_train, neural_net_options(stop_criteria=StopAfterIteration(1000)))
-    res    = predict(net, x_test[:,fea])
-    println(@sprintf("--Net   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
+    #net    = fit(x_train[:,fea], y_train, neural_net_options(stop_criteria=StopAfterIteration(1000)))
+    #res    = predict(net, x_test[:,fea])
+    #println(@sprintf("--Net   Accuracy: %0.2f%%", accuracy(res, y_test)*100))
 end
