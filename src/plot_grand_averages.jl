@@ -8,8 +8,10 @@ output_path = ensure_empty_directory_exists(ARGS[2])
 
 grand_average_path = joinpath(output_path, "GrandAverage")
 fft_path           = joinpath(output_path, "FFT")
+channel_path       = joinpath(output_path, "Channels")
 mkdir(grand_average_path)
 mkdir(fft_path)
+mkdir(channel_path)
 
 function plot_grand_average(average, title)
     channels = repmat([1:size(average, 1)], 1, size(average, 2)) 
@@ -32,6 +34,16 @@ function plot_fft(X, sampling_rate, title)
     draw(PNG(joinpath(fft_path, @sprintf("FFT-%s.png", title)), 20cm, 15cm), p)
 end
 
+function plot_channel_averages(face, no_face, subject_channel_path)
+    time = [1:size(face, 2)]
+    for channel=1:size(face, 1)
+        df = vcat(DataFrame(Time=time, Value=vec(face[channel,:]),    Stimulus="Face"),
+                  DataFrame(Time=time, Value=vec(no_face[channel,:]), Stimulus="No Face"))
+        p = plot(df, x="Time", y="Value", color="Stimulus", Geom.line)
+        draw(PNG(joinpath(subject_channel_path, @sprintf("%d.png", channel)), 20cm, 15cm), p)
+    end
+end
+
 for subject=train_subjects
     f = matopen(joinpath(data_path, subject_file(subject)))
     X     = read(f, "X")
@@ -52,4 +64,6 @@ for subject=train_subjects
     plot_grand_average(face, @sprintf("Subject %d-Face", subject))
     plot_grand_average(no_face, @sprintf("Subject %d-No Face", subject))
     plot_grand_average(face-no_face, @sprintf("Subject %d-Face-No Face", subject))
+    subject_channel_path = ensure_empty_directory_exists(joinpath(channel_path, @sprintf("Subject%02d", subject)))
+    plot_channel_averages(face, no_face, subject_channel_path)
 end
