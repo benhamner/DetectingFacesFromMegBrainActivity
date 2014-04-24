@@ -51,4 +51,5 @@ for subject=train_subjects
     no_face = reshape(mean(X[vec(y).!=1,:,:], 1), num_channels, num_time_samples)
     plot_grand_average(face, @sprintf("Subject %d-Face", subject))
     plot_grand_average(no_face, @sprintf("Subject %d-No Face", subject))
+    plot_grand_average(face-no_face, @sprintf("Subject %d-Face-No Face", subject))
 end
