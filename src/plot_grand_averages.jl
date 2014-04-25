@@ -9,9 +9,11 @@ output_path = ensure_empty_directory_exists(ARGS[2])
 grand_average_path = joinpath(output_path, "GrandAverage")
 fft_path           = joinpath(output_path, "FFT")
 channel_path       = joinpath(output_path, "Channels")
+z_score_path       = joinpath(output_path, "ZScore")
 mkdir(grand_average_path)
 mkdir(fft_path)
 mkdir(channel_path)
+mkdir(z_score_path)
 
 function plot_grand_average(average, title)
     channels = repmat([1:size(average, 1)], 1, size(average, 2)) 
@@ -24,6 +26,19 @@ function plot_grand_average(average, title)
     df_grand_average = DataFrame(Response=grand_average, Time=[1:length(grand_average)])
     p = plot(df_grand_average, x="Time", y="Response", Geom.line)
     draw(PNG(joinpath(grand_average_path, @sprintf("Average-%s.png", title)), 20cm, 15cm), p)
+end
+
+function plot_z_score(X_face, X_no_face, title)
+    num_channels     = size(X_face,2)
+    num_time_samples = size(X_no_face,3)
+    channels = repmat([1:num_channels], 1, num_time_samples) 
+    time     = repmat(transpose([1:num_time_samples]), num_channels, 1)
+    difference = reshape(abs(mean(X_face, 1)-mean(X_no_face, 1)), num_channels, num_time_samples)
+    variance   = reshape(var(cat(1, X_face, X_no_face), 1), num_channels, num_time_samples)
+    score = difference ./ variance
+    df = DataFrame(ZScore=vec(score), Channels=vec(channels), Time=vec(time))
+    p = plot(df, x="Time", y="Channels", color="ZScore", Geom.rectbin)
+    draw(PNG(joinpath(z_score_path, @sprintf("%s.png", title)), 20cm, 15cm), p)
 end
 
 function plot_fft(X, sampling_rate, title)
@@ -64,6 +79,7 @@ for subject=train_subjects
     plot_grand_average(face, @sprintf("Subject %d-Face", subject))
     plot_grand_average(no_face, @sprintf("Subject %d-No Face", subject))
     plot_grand_average(face-no_face, @sprintf("Subject %d-Face-No Face", subject))
+    plot_z_score(X[vec(y).==1,:,:], X[vec(y).!=1,:,:], @sprintf("Subject %d", subject))
     subject_channel_path = ensure_empty_directory_exists(joinpath(channel_path, @sprintf("Subject%02d", subject)))
     plot_channel_averages(face, no_face, subject_channel_path)
 end
