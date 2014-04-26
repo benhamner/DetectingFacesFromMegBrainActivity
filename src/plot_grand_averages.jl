@@ -38,6 +38,7 @@ function plot_z_score(X_face, X_no_face, title)
     score = difference ./ variance
     df = DataFrame(ZScore=vec(score), Channels=vec(channels), Time=vec(time))
     p = plot(df, x="Time", y="Channels", color="ZScore", Geom.rectbin)
+    writecsv(joinpath(z_score_path, @sprintf("%s.csv", title)), score)
     draw(PNG(joinpath(z_score_path, @sprintf("%s.png", title)), 20cm, 15cm), p)
 end
 
@@ -63,7 +64,9 @@ for subject=train_subjects
     f = matopen(joinpath(data_path, subject_file(subject)))
     X     = read(f, "X")
     sfreq = read(f, "sfreq")
+    y = read(f, "y")
     plot_fft(X, sfreq, @sprintf("Subject %d-Face", subject))
+    plot_z_score(X[vec(y).==1,:,:], X[vec(y).!=1,:,:], @sprintf("Subject %d", subject))
     #(b,a) = power_filter(sfreq, 50)
     #apply_filter!(X, b, a)
     #(b,a) = power_filter(sfreq, 100)
@@ -73,13 +76,11 @@ for subject=train_subjects
     plot_fft(X, sfreq, @sprintf("After Subject %d-Face", subject))
     num_channels     = size(X,2)
     num_time_samples = size(X,3)
-    y = read(f, "y")
     face    = reshape(mean(X[vec(y).==1,:,:], 1), num_channels, num_time_samples)
     no_face = reshape(mean(X[vec(y).!=1,:,:], 1), num_channels, num_time_samples)
     plot_grand_average(face, @sprintf("Subject %d-Face", subject))
     plot_grand_average(no_face, @sprintf("Subject %d-No Face", subject))
     plot_grand_average(face-no_face, @sprintf("Subject %d-Face-No Face", subject))
-    plot_z_score(X[vec(y).==1,:,:], X[vec(y).!=1,:,:], @sprintf("Subject %d", subject))
     subject_channel_path = ensure_empty_directory_exists(joinpath(channel_path, @sprintf("Subject%02d", subject)))
     plot_channel_averages(face, no_face, subject_channel_path)
 end
