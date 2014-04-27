@@ -44,14 +44,17 @@ function plot_z_score(X_face, X_no_face, title)
 
     # try showing in a better order
     res = hcluster.complete(dist.pdist(score, metric="correlation"))
-    I   = sortperm(hcluster.fcluster(res, 1.0))
+    I   = sortperm(hcluster.fcluster(res, 5.0))
+    I   = sortperm(vec(maximum(score,2)))
 
-    channels = repmat(I, 1, num_time_samples) 
+    score = score[I,:]
+    channels = repmat([1:num_channels], 1, num_time_samples) 
     time     = repmat(transpose([1:num_time_samples]), num_channels, 1)
     df = DataFrame(ZScore=vec(score), Channels=vec(channels), Time=vec(time))
-    p = plot(df, x="Time", y="Channels", color="ZScore", Geom.rectbin, rainbow)
+    axes = Coord.cartesian(xmin=1, xmax=num_time_samples, ymin=1, ymax=num_channels)
+    p = plot(df, x="Time", y="Channels", color="ZScore", Geom.rectbin, rainbow, axes)
     writecsv(joinpath(z_score_path, @sprintf("%s.csv", title)), score)
-    draw(PNG(joinpath(z_score_path, @sprintf("%s.png", title)), 28cm, 21.6cm), p)
+    draw(PNG(joinpath(z_score_path, @sprintf("%s.png", title)), 2*28cm, 2*21.6cm), p)
 end
 
 function plot_fft(X, sampling_rate, title)
