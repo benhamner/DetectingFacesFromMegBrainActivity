@@ -1,7 +1,12 @@
 require("src/helpers.jl")
+using Color
 using DataFrames
 using Gadfly
 using MAT
+using PyCall
+
+@pyimport scipy.cluster.hierarchy as hcluster
+@pyimport scipy.spatial.distance as dist
 
 data_path   = ARGS[1]
 output_path = ensure_empty_directory_exists(ARGS[2])
@@ -15,31 +20,38 @@ mkdir(fft_path)
 mkdir(channel_path)
 mkdir(z_score_path)
 
+rainbow = Scale.ContinuousColorScale(Scale.lab_gradient(ColorValue[color(c) for c=["#3288bd","#99d594","#e6f598","#fee08b","#fc8d59","#d53e4f"]]...))
+
 function plot_grand_average(average, title)
     channels = repmat([1:size(average, 1)], 1, size(average, 2)) 
     time     = repmat(transpose([1:size(average, 2)]), size(average, 1), 1)
     df = DataFrame(Response=vec(average), Channels=vec(channels), Time=vec(time))
-    p = plot(df, x="Time", y="Channels", color="Response", Geom.rectbin)
-    draw(PNG(joinpath(grand_average_path, @sprintf("%s.png", title)), 20cm, 15cm), p)
+    p = plot(df, x="Time", y="Channels", color="Response", Geom.rectbin, rainbow)
+    draw(PNG(joinpath(grand_average_path, @sprintf("%s.png", title)), 28cm, 21.6cm), p)
 
     grand_average = reshape(mean(average, 1), size(average,2))
     df_grand_average = DataFrame(Response=grand_average, Time=[1:length(grand_average)])
     p = plot(df_grand_average, x="Time", y="Response", Geom.line)
-    draw(PNG(joinpath(grand_average_path, @sprintf("Average-%s.png", title)), 20cm, 15cm), p)
+    draw(PNG(joinpath(grand_average_path, @sprintf("Average-%s.png", title)), 28cm, 21.6cm), p)
 end
 
 function plot_z_score(X_face, X_no_face, title)
     num_channels     = size(X_face,2)
     num_time_samples = size(X_no_face,3)
-    channels = repmat([1:num_channels], 1, num_time_samples) 
-    time     = repmat(transpose([1:num_time_samples]), num_channels, 1)
-    difference = reshape(abs(mean(X_face, 1)-mean(X_no_face, 1)), num_channels, num_time_samples)
+    difference = reshape((mean(X_face, 1)-mean(X_no_face, 1)), num_channels, num_time_samples)
     variance   = reshape(var(cat(1, X_face, X_no_face), 1), num_channels, num_time_samples)
     score = difference ./ variance
+
+    # try showing in a better order
+    res = hcluster.complete(dist.pdist(score, metric="correlation"))
+    I   = sortperm(hcluster.fcluster(res, 1.0))
+
+    channels = repmat(I, 1, num_time_samples) 
+    time     = repmat(transpose([1:num_time_samples]), num_channels, 1)
     df = DataFrame(ZScore=vec(score), Channels=vec(channels), Time=vec(time))
-    p = plot(df, x="Time", y="Channels", color="ZScore", Geom.rectbin)
+    p = plot(df, x="Time", y="Channels", color="ZScore", Geom.rectbin, rainbow)
     writecsv(joinpath(z_score_path, @sprintf("%s.csv", title)), score)
-    draw(PNG(joinpath(z_score_path, @sprintf("%s.png", title)), 20cm, 15cm), p)
+    draw(PNG(joinpath(z_score_path, @sprintf("%s.png", title)), 28cm, 21.6cm), p)
 end
 
 function plot_fft(X, sampling_rate, title)
@@ -47,7 +59,7 @@ function plot_fft(X, sampling_rate, title)
     frequencies = linspace(sampling_rate/2/length(power), sampling_rate/2, length(power))
     df = DataFrame(Frequencies=frequencies, Power=power)
     p = plot(df, x="Frequencies", y="Power", Geom.line)
-    draw(PNG(joinpath(fft_path, @sprintf("FFT-%s.png", title)), 20cm, 15cm), p)
+    draw(PNG(joinpath(fft_path, @sprintf("FFT-%s.png", title)), 28cm, 21.6cm), p)
 end
 
 function plot_channel_averages(face, no_face, subject_channel_path)
@@ -56,7 +68,7 @@ function plot_channel_averages(face, no_face, subject_channel_path)
         df = vcat(DataFrame(Time=time, Value=vec(face[channel,:]),    Stimulus="Face"),
                   DataFrame(Time=time, Value=vec(no_face[channel,:]), Stimulus="No Face"))
         p = plot(df, x="Time", y="Value", color="Stimulus", Geom.line)
-        draw(PNG(joinpath(subject_channel_path, @sprintf("%d.png", channel)), 20cm, 15cm), p)
+        draw(PNG(joinpath(subject_channel_path, @sprintf("%d.png", channel)), 28cm, 21.6cm), p)
     end
 end
 
