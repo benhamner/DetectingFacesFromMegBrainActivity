@@ -24,6 +24,9 @@ mkdir(channel_path)
 mkdir(z_score_path)
 mkdir(difference_path)
 mkdir(topomaps_path)
+mkdir(joinpath(topomaps_path, "Difference"))
+mkdir(joinpath(topomaps_path, "Face"))
+mkdir(joinpath(topomaps_path, "NoFace"))
 
 rainbow = Scale.ContinuousColorScale(Scale.lab_gradient(ColorValue[color(c) for c=["#3288bd","#99d594","#e6f598","#fee08b","#fc8d59","#d53e4f"]]...))
 
@@ -82,11 +85,11 @@ function plot_channel_averages(face, no_face, subject_channel_path)
     end
 end
 
-function plot_topomaps(face, no_face, times, subject)
-    num_channels = size(face, 1)
+function plot_topomaps(data, times, path)
+    num_channels = size(data, 1)
     layout = mne.layouts[:read_layout]("Vectorview-all")
     evoked = mne.fiff[:Evoked](pyeval("None"))
-    evoked[:data]  = face-no_face
+    evoked[:data]  = data
     evoked[:times] = times
     evoked[:info]  = {"ch_names" => layout[:names],
                       "chs" => [{"kind"=>1,"unit"=>112} for i=1:num_channels],
@@ -97,7 +100,7 @@ function plot_topomaps(face, no_face, times, subject)
                                       proj=pyeval("False"),
                                       size=3,
                                       show=pyeval("False"))
-    p[:savefig](joinpath(topomaps_path, @sprintf("Subject%d.png", subject)))
+    p[:savefig](path)
 end
 
 for subject=train_subjects
@@ -121,10 +124,13 @@ for subject=train_subjects
     num_time_samples = size(X,3)
     face    = reshape(mean(X[vec(y).==1,:,:], 1), num_channels, num_time_samples)
     no_face = reshape(mean(X[vec(y).!=1,:,:], 1), num_channels, num_time_samples)
-    plot_topomaps(face, no_face, times, subject)
+    plot_topomaps(face-no_face, times, joinpath(topomaps_path, "Difference", @sprintf("Subject%d.png", subject)))
+    plot_topomaps(face,         times, joinpath(topomaps_path, "Face",       @sprintf("Subject%d.png", subject)))
+    plot_topomaps(no_face,      times, joinpath(topomaps_path, "NoFace",     @sprintf("Subject%d.png", subject)))
     plot_grand_average(face, @sprintf("Subject %d-Face", subject))
     plot_grand_average(no_face, @sprintf("Subject %d-No Face", subject))
     plot_grand_average(face-no_face, @sprintf("Subject %d-Face-No Face", subject))
-    subject_channel_path = ensure_empty_directory_exists(joinpath(channel_path, @sprintf("Subject%02d", subject)))
+    subject_channel_path = joinpath(channel_path, @sprintf("Subject%02d", subject))
+    mkdir(subject_channel_path)
     plot_channel_averages(face, no_face, subject_channel_path)
 end
