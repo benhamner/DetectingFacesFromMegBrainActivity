@@ -24,6 +24,12 @@ main:
 single-subject:
 	julia src/single_subject.jl $(RAW_MAT_DIR)/data
 
+$(WORKING_DIR)/ChannelSelection/.sentinel: 
+	julia src/channel_selection.jl $(RAW_MAT_DIR)/data $(WORKING_DIR)/ChannelSelection
+	touch $(WORKING_DIR)/ChannelSelection/.sentinel
+
+channel-selection: $(WORKING_DIR)/ChannelSelection/.sentinel
+
 features:
 	julia src/features.jl $(RAW_MAT_DIR)/data
 

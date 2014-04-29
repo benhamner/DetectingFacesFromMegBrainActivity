@@ -98,6 +98,12 @@ function extract_features(X)
     hcat(fft_features, time_features)
 end
 
+function extract_channel_features(X, channel)
+    time_samples = [126:5:size(X,3)]
+    features = reshape(X[:,channel,time_samples], size(X,1), length(time_samples))
+    float64(features)
+end
+
 function evaluate_subject(subject)
     X, y, sfreq = read_subject(subject)
     (b,a) = low_pass_filter(sfreq, 40)
