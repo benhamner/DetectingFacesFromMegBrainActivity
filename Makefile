@@ -30,6 +30,9 @@ $(WORKING_DIR)/ChannelSelection/.sentinel:
 
 channel-selection: $(WORKING_DIR)/ChannelSelection/.sentinel
 
+combine-channels: 
+	julia src/combine_channels.jl $(WORKING_DIR)/ChannelSelection
+
 features:
 	julia src/features.jl $(RAW_MAT_DIR)/data
 
