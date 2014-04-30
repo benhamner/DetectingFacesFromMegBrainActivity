@@ -1,9 +1,12 @@
+using DataStructures
+
 require("src/helpers.jl")
 
 data_path   = ARGS[1]
 # output_path = ensure_empty_directory_exists(ARGS[2])
 
 channels = IntSet()
+counter  = counter(Int)
 
 for subject=train_subjects
     println("Subject ", subject)
@@ -15,7 +18,11 @@ for subject=train_subjects
     print(channels_selected', "\n")
     for c=channels_selected
         push!(channels, c)
+        add!(counter,   c)
     end
 end
 
 print(@sprintf("Number of Channels Selected: %d\n", length(channels)))
+for t=sortby([x for x=counter], x->-x[2])
+    print(t, "\n")
+end
