@@ -1,9 +1,10 @@
+using DataFrames
 using DataStructures
 
 require("src/helpers.jl")
 
 data_path   = ARGS[1]
-# output_path = ensure_empty_directory_exists(ARGS[2])
+output_path = ensure_empty_directory_exists(ARGS[2])
 
 channels = IntSet()
 counter  = counter(Int)
@@ -22,7 +23,12 @@ for subject=train_subjects
     end
 end
 
-print(@sprintf("Number of Channels Selected: %d\n", length(channels)))
-for t=sortby([x for x=counter], x->-x[2])
-    print(t, "\n")
-end
+#print(@sprintf("Number of Channels Selected: %d\n", length(channels)))
+#for t=sortby([x for x=counter], x->-x[2])
+#    print(t, "\n")
+#end
+
+counts = sortby([x for x=counter], x->-x[2])
+selected_counts = DataFrame(Channel=Int[x[1] for x=counts], Count=[x[2] for x=counts])
+writetable(joinpath(output_path, "SelectedCounts.csv"), selected_counts)
+writetable(joinpath(output_path, "CombinedSelected.csv"), selected_counts[selected_counts[:Count].>=3,:])
