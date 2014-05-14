@@ -126,6 +126,23 @@ function evaluate_subject(subject)
     run_models(x_train, y_train, x_test, y_test, 500)
 end
 
+function evaluate_subject_change_detect(subject)
+    X, y, sfreq = read_subject(subject)
+    (b,a) = low_pass_filter(sfreq, 40)
+    apply_filter!(X, b, a)
+    first  = X[:,:,76:200]
+    second = X[:,:,201:325]
+    Xnew = cat(1, first, second)
+    ynew = cat(1, ones(size(X,1)), zeros(size(X,1)))
+    features = extract_features(Xnew)
+    x_train, y_train, x_test, y_test = split_train_test(features, vec(ynew), seed=1)
+    zmuv = fit(features, ZmuvOptions())
+    x_train = transform(zmuv, x_train)
+    x_test  = transform(zmuv, x_test)
+    println("****50 Features****")
+    run_models(x_train, y_train, x_test, y_test, 50)
+end
+
 function run_models(x_train, y_train, x_test, y_test, num_features)
     scores = [abs(auc(vec(y_train),vec(x_train[:,i]))-0.5) for i=1:size(x_train, 2)]
     fea = sortperm(scores, rev=true)[1:num_features]

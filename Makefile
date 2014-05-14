@@ -24,6 +24,9 @@ main:
 single-subject:
 	julia src/single_subject.jl $(RAW_MAT_DIR)/data
 
+change-detect:
+	julia src/single_subject_change_detect.jl $(RAW_MAT_DIR)/data
+
 $(WORKING_DIR)/ChannelSelection/.sentinel: 
 	julia src/channel_selection.jl $(RAW_MAT_DIR)/data $(WORKING_DIR)/ChannelSelection
 	touch $(WORKING_DIR)/ChannelSelection/.sentinel
