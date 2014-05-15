@@ -141,6 +141,8 @@ function evaluate_subject_change_detect(subject)
     x_test  = transform(zmuv, x_test)
     println("****50 Features****")
     run_models(x_train, y_train, x_test, y_test, 50)
+    println("****500 Features****")
+    run_models(x_train, y_train, x_test, y_test, 500)
 end
 
 function run_models(x_train, y_train, x_test, y_test, num_features)
