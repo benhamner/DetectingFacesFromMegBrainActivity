@@ -2,8 +2,8 @@ require("src/helpers.jl")
 using MachineLearning
 using MAT
 
-data_path       = ARGS[1]
-submission_file = ARGS[2]
+submission_file = ARGS[1]
+data_path       = ARGS[2]
 
 fea = IntSet()
 
