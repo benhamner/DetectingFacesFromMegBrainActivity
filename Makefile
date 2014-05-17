@@ -19,7 +19,7 @@ $(RAW_MAT_DIR)/.sentinel: $(TRAIN1_ZIP) $(TRAIN2_ZIP) $(TRAIN3_ZIP) $(TEST_ZIP)
 unzip-files: $(RAW_MAT_DIR)/.sentinel
 
 $(WORKING_DIR)/Submission.csv:
-	julia src/main.jl 	julia src/main.jl $(RAW_MAT_DIR)/data 
+	julia src/main.jl $(WORKING_DIR)/Submission.csv $(RAW_MAT_DIR)/data 
 
 main: $(WORKING_DIR)/Submission.csv
 
