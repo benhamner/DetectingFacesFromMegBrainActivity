@@ -20,7 +20,6 @@ unzip-files: $(RAW_MAT_DIR)/.sentinel
 
 $(WORKING_DIR)/Submission.csv:
 	julia src/main.jl $(WORKING_DIR)/Submission.csv $(RAW_MAT_DIR)/data 
-
 main: $(WORKING_DIR)/Submission.csv
 
 single-subject:

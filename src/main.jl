@@ -7,7 +7,7 @@ data_path       = ARGS[2]
 
 fea = IntSet()
 
-for subject=1:10
+for subject=1:16
     f = matopen(joinpath(data_path, subject_file(subject)))
     X = read(f, "X")
     y = read(f, "y")
@@ -29,7 +29,7 @@ fea = Int[x for x=fea]
 x_train = zeros(0, length(fea))
 y_train = zeros(0, 1)
 
-for subject=1:10
+for subject=1:16
     f = matopen(joinpath(data_path, subject_file(subject)))
     X = read(f, "X")
     y = read(f, "y")
@@ -45,22 +45,22 @@ end
 
 forest = fit(x_train, vec(y_train), classification_forest_options(num_trees=100))
 
-for subject=11:16
-    f = matopen(joinpath(data_path, subject_file(subject)))
-    X = read(f, "X")
-    y = read(f, "y")
-    sfreq = read(f, "sfreq")
+#for subject=11:16
+#    f = matopen(joinpath(data_path, subject_file(subject)))
+#    X = read(f, "X")
+#    y = read(f, "y")
+#    sfreq = read(f, "sfreq")
     
-    println("Subject ", subject)
+#    println("Subject ", subject)
 
-    (b,a) = low_pass_filter(sfreq, 40)
-    apply_filter!(X, b, a)
-    features = extract_features(X)[:,fea]
-    zmuv = fit(features, ZmuvOptions())
-    x_test = transform(zmuv, features)
-    res    = predict(forest, x_test)
-    println(@sprintf("--Test Accuracy: %0.2f%%", accuracy(res, vec(y))*100))
-end
+#    (b,a) = low_pass_filter(sfreq, 40)
+#    apply_filter!(X, b, a)
+#    features = extract_features(X)[:,fea]
+#    zmuv = fit(features, ZmuvOptions())
+#    x_test = transform(zmuv, features)
+#    res    = predict(forest, x_test)
+#    println(@sprintf("--Test Accuracy: %0.2f%%", accuracy(res, vec(y))*100))
+#end
 
 submission = ["Id" "Prediction"]
 
